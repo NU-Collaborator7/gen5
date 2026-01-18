@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -255,14 +256,12 @@
             30% { transform: translateY(-8px); }
         }
 
-        /* iOS専用のスタイル調整 */
         @supports (-webkit-touch-callout: none) {
             .chat-input {
-                font-size: 16px !important; /* iOSのズーム防止 */
+                font-size: 16px !important;
             }
         }
 
-        /* 小画面用の調整 */
         @media (max-width: 600px) {
             .chat-header {
                 font-size: 16px;
@@ -293,7 +292,6 @@
             }
         }
 
-        /* 横向き用の調整 */
         @media (orientation: landscape) and (max-height: 500px) {
             .chat-header {
                 padding: 8px 12px;
@@ -361,13 +359,11 @@
         let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         let isAndroid = /Android/.test(navigator.userAgent);
         
-        // テキストエリアの自動リサイズ
         inputField.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 120) + 'px';
         });
         
-        // iOSでのキーボード表示時のスクロール調整
         if (isIOS) {
             inputField.addEventListener('focus', function() {
                 setTimeout(() => {
@@ -376,7 +372,6 @@
             });
         }
         
-        // 音声合成の初期化チェック
         if (!('speechSynthesis' in window)) {
             voiceStatus.textContent = '⚠️ 音声非対応';
             voiceSelect.disabled = true;
@@ -384,17 +379,14 @@
             voiceStatus.textContent = 'iOS音声制限あり';
         }
         
-        // モデル選択の変更イベント
         modelSelect.addEventListener('change', (e) => {
             selectedModel = e.target.value;
         });
         
-        // 音声性別選択の変更イベント
         voiceSelect.addEventListener('change', (e) => {
             selectedVoiceGender = e.target.value;
         });
         
-        // 全ての音声再生を停止
         function stopAllSpeech() {
             speechSynthesis.cancel();
             speechQueue = [];
@@ -403,7 +395,6 @@
             voiceStatus.textContent = '';
         }
         
-        // 音声再生の準備と実行（モバイル最適化版）
         function speakTextOnDemand(text, button) {
             if (!text) return;
             
@@ -412,7 +403,6 @@
             button.textContent = '⏸️ 停止';
             button.classList.add('playing');
             
-            // マークダウン記号を除去
             let cleanText = text
                 .replace(/\*\*/g, '')
                 .replace(/\*/g, '')
@@ -429,10 +419,8 @@
                 .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '')
                 .replace(/\.{3}/g, '');
             
-            // 文章を分割（モバイルでは短めに）
             const sentences = cleanText.match(/[^。.!?]+[。.!?]+/g) || [cleanText];
             
-            // iOS対応: 音声リストの読み込みを待つ
             const loadVoices = () => {
                 return new Promise((resolve) => {
                     let voices = speechSynthesis.getVoices();
@@ -452,7 +440,6 @@
                     
                     let targetVoice = null;
                     
-                    // 音声性別に応じて選択
                     if (selectedVoiceGender === 'female') {
                         targetVoice = voices.find(voice => 
                             voice.lang.startsWith('ja') && 
@@ -469,7 +456,6 @@
                         );
                     }
                     
-                    // 指定された性別の音声が見つからない場合
                     if (!targetVoice) {
                         targetVoice = voices.find(voice => voice.lang.startsWith('ja'));
                     }
@@ -480,9 +466,9 @@
                         utterance.voice = targetVoice;
                     }
                     
-                    // モバイルでの最適化（より遅く、ピッチも調整）
                     utterance.rate = isIOS ? 1.0 : 1.0;
-                    utterance.pitch = isIOS ? 1.0 : 1.0;
+                    utterance.pitch = selectedVoiceGender === 'female' ? 1.2 : 
+                                     selectedVoiceGender === 'male' ? 0.9 : 1.0;
                     utterance.volume = 1.0;
                     
                     utterance.onstart = () => {
@@ -493,7 +479,6 @@
                     };
                     
                     utterance.onend = () => {
-                        // iOS対応: 小さな遅延を入れる
                         setTimeout(() => {
                             if (!speechSynthesis.speaking && index === sentences.length - 1) {
                                 isSpeaking = false;
@@ -512,7 +497,6 @@
                         button.classList.remove('playing');
                     };
                     
-                    // iOS対応: 少し間隔を空けて再生
                     if (isIOS && index > 0) {
                         setTimeout(() => {
                             speechSynthesis.speak(utterance);
@@ -529,7 +513,6 @@
             messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
             messageDiv.innerHTML = text.replaceAll('\n', '<br>');
             
-            // AIメッセージの場合、再生ボタンを追加
             if (!isUser && text && voiceEnabled) {
                 const playButton = document.createElement('button');
                 playButton.className = 'play-button';
@@ -554,7 +537,6 @@
             
             messagesDiv.appendChild(messageDiv);
             
-            // スムーズなスクロール
             setTimeout(() => {
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             }, 100);
@@ -592,7 +574,7 @@
             const profiling8 = "年間約40試合を球場で観戦。ライトスタンドの定位置に座ると、重鎮になる。";
             const profiling9 = "宝物は、大山悠輔選手のサインボールと、2023年の日本一記念グッズ一式。";
             const profiling10 = "タイガースの歴史を語り始めると、目が据わるため「虎のお姉ちゃん」として恐れられる。 2023年: 38年ぶりの日本一になった時は、全スポーツ新聞を購入した。2025年: 藤川球児監督のもとでのNPB最速優勝に歓喜した。2025年、日本シリーズでソフトバンクに負けた時は、悔しかった。";
-            const profiling11 = "巨人に負けた翌日は機嫌が悪い。口癖は「…で、昨日の継投、お前はどう思う？」で周囲を困惑させる。";
+            const profiling11 = "巨人に負けた翌日は機嫌が悪い。口癖は「…で、昨日の継投、お前はどう思う?」で周囲を困惑させる。";
             const profiling12 = "タイガースの歴史を語り始めると目が据わるので『虎の説教』として恐れられる。";
             const profiling13 = "選手が移籍したり引退したりするたびに、近所の居酒屋の隅で『…あいつも苦労したんや』と親戚のおばちゃんのような顔で独り言を言いながら日本酒を煽る";
             const profiling14 = "甲子園カレー辛口、イカ焼きが好き。試合に負けると、帰り道のコンビニでパインアメを爆買いしてしまう。";
@@ -708,12 +690,10 @@
             }
         });
 
-        // 初期フォーカス（デスクトップのみ）
         if (!isIOS && !isAndroid) {
             inputField.focus();
         }
         
-        // ページ離脱時に音声を停止
         window.addEventListener('beforeunload', stopAllSpeech);
         window.addEventListener('pagehide', stopAllSpeech);
     </script>
