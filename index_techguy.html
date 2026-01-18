@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIチャット(Tech Guy)</title>
+    <title>AIチャット（自分のオリジナルAIを作ろう。）</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Kosugi+Maru&display=swap" rel="stylesheet">
     <style>
-    /* --- 既存のデザインを維持 --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
         font-family: 'Noto Sans JP', 'Helvetica Neue', Arial, sans-serif;
@@ -26,14 +25,16 @@
     .chat-header .title-emoji { font-size: 32px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 50%; }
     .chat-header .title-text { font-size: 22px; font-weight: 700; }
     
-    .profile-selector { padding: 10px 20px; background: #fdfcfb; border-bottom: 1px solid #eee; display: flex; gap: 10px; align-items: center; }
+    .profile-selector { 
+        padding: 10px 20px; background: #fdfcfb; border-bottom: 1px solid #eee; 
+        display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    }
     
-    /* --- 追加/修正したスタイル --- */
     #customProfileContainer {
         padding: 15px 20px;
         background: #fdfcfb;
         border-bottom: 1px solid #eee;
-        display: none; /* 初期状態は非表示 */
+        display: none;
         animation: slideDown 0.3s ease-out;
     }
     @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -54,6 +55,7 @@
 
     .form-select { padding: 6px 12px; border-radius: 10px; border: 1px solid #ddd; }
     .voice-status { font-size: 12px; color: #e67e22; margin-left: auto; font-weight: bold; }
+    .load-status { font-size: 12px; color: #27ae60; font-weight: bold; }
 
     .chat-messages { flex:1; overflow-y:auto; padding:25px; display:flex; flex-direction:column; gap:18px; background-image: radial-gradient(#eee 1px, transparent 1px); background-size: 20px 20px; }
     .message { max-width:85%; padding:16px 20px; border-radius:18px; word-wrap:break-word; line-height: 1.6; animation: fadeIn 0.3s ease-out; }
@@ -69,7 +71,6 @@
     .typing-indicator { display:flex; gap:5px; padding:10px 15px; }
     .typing-indicator span { width:6px; height:6px; background:#2c3e50; border-radius:50%; animation:bounce 1.4s infinite; opacity:0.3; }
     @keyframes bounce { 0%,60%,100%{ transform:translateY(0);} 30%{ transform:translateY(-5px);} }
-    .load-status { font-size: 12px; color: #27ae60; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -85,12 +86,17 @@
                 <option value="RAG/profile_2.txt">Profile_2</option>
                 <option value="custom">自分のキャラクターを作る</option>
             </select>
+            <select id="voiceSelect" class="form-select">
+                <option value="auto">音声: 自動</option>
+                <option value="male">音声: 男性</option>
+                <option value="female">音声: 女性</option>
+            </select>
             <div id="loadStatus" class="load-status"></div>
             <div id="voiceStatus" class="voice-status"></div>
         </div>
 
         <div id="customProfileContainer">
-            <textarea id="customProfileText" class="custom-textarea" placeholder="ここに作りたいキャラクターの設定を入力してください。"></textarea>
+            <textarea id="customProfileText" class="custom-textarea" placeholder="ここに作りたいキャラクターの設定を入力してください。そのキャラクターのAIが回答してくれます。"></textarea>
         </div>
 
         <div class="chat-messages" id="messages"></div>
@@ -109,6 +115,7 @@
         const voiceStatus = document.getElementById('voiceStatus');
         const loadStatus = document.getElementById('loadStatus');
         const profileSelect = document.getElementById('profileSelect');
+        const voiceSelect = document.getElementById('voiceSelect');
         const customContainer = document.getElementById('customProfileContainer');
         const customTextArea = document.getElementById('customProfileText');
 
@@ -116,15 +123,52 @@
         let charaData = ""; 
         let conversationHistory = [];
         let selectedModel = 'gemini-2.0-flash';
+        let availableVoices = [];
+
+        // 音声リストを読み込む
+        function loadVoices() {
+            availableVoices = window.speechSynthesis.getVoices();
+        }
+
+        // 音声リストが読み込まれるまで待つ
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+        loadVoices();
+
+        // 選択された音声タイプに基づいて最適な音声を取得
+        function getSelectedVoice() {
+            const voiceType = voiceSelect.value;
+            const jaVoices = availableVoices.filter(v => v.lang.includes('ja'));
+            
+            if (voiceType === 'male') {
+                // 男性の声を優先的に選択
+                return jaVoices.find(v => 
+                    v.name.includes('Male') || 
+                    v.name.includes('男性') ||
+                    v.name.includes('Ichiro') ||
+                    v.name.includes('Otoya')
+                ) || jaVoices[0];
+            } else if (voiceType === 'female') {
+                // 女性の声を優先的に選択
+                return jaVoices.find(v => 
+                    v.name.includes('Female') || 
+                    v.name.includes('女性') ||
+                    v.name.includes('Ayumi') ||
+                    v.name.includes('Kyoko')
+                ) || jaVoices[0];
+            }
+            
+            // 自動の場合はデフォルトの日本語音声
+            return jaVoices[0];
+        }
 
         // プロファイルデータの読み込み
         async function loadCharaData() {
             const selectedValue = profileSelect.value;
             
             if (selectedValue === 'custom') {
-                // カスタム入力欄を表示
                 customContainer.style.display = 'block';
-                // カスタムテキストエリアの内容をセット
                 charaData = customTextArea.value.trim();
                 if (charaData) {
                     loadStatus.textContent = '✓ カスタム設定読み込み完了';
@@ -133,9 +177,7 @@
                     loadStatus.textContent = '⚠ キャラクター設定を入力してください';
                 }
             } else {
-                // カスタム入力欄を非表示
                 customContainer.style.display = 'none';
-                // ファイルから読み込み
                 try {
                     loadStatus.textContent = '読み込み中...';
                     const response = await fetch(selectedValue);
@@ -151,20 +193,17 @@
             }
         }
 
-        // セレクトボックスの変更を検知して自動読み込み
         profileSelect.addEventListener('change', loadCharaData);
 
-        // カスタムテキストエリアの内容が変更されたら自動的にcharaDataに反映
         customTextArea.addEventListener('input', () => {
             if (profileSelect.value === 'custom') {
                 charaData = customTextArea.value.trim();
             }
         });
 
-        // ページ読み込み時にprofile_1を自動読み込み
         window.addEventListener('load', loadCharaData);
 
-        // --- 音声・チャット処理 ---
+        // 音声関連処理
         function stopAllSpeech() {
             window.speechSynthesis.cancel();
             voiceStatus.textContent = '';
@@ -178,17 +217,31 @@
             stopAllSpeech();
             button.textContent = '⏸️ 停止';
             button.classList.add('playing');
+            
             const cleanText = text.replace(/[*#]/g, '').trim();
             const utterance = new SpeechSynthesisUtterance(cleanText);
+            
+            // 選択された音声を設定
+            const selectedVoice = getSelectedVoice();
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+            
             utterance.lang = 'ja-JP';
             utterance.rate = 1.1;
             utterance.pitch = 0.9;
-            utterance.onstart = () => { voiceStatus.textContent = '🎤 読み上げ中...'; };
+            
+            utterance.onstart = () => { 
+                const voiceType = voiceSelect.value === 'male' ? '男性' : voiceSelect.value === 'female' ? '女性' : '自動';
+                voiceStatus.textContent = `🎤 読み上げ中... (${voiceType})`; 
+            };
+            
             utterance.onend = () => {
                 button.textContent = '▶️ 音声を再生する';
                 button.classList.remove('playing');
                 voiceStatus.textContent = '';
             };
+            
             window.speechSynthesis.speak(utterance);
         }
 
@@ -237,7 +290,6 @@
                     if (part?.text) {
                         fullResponse += part.text;
                         
-                        // メッセージ内容の更新（ボタンを保持しつつテキストを書き換える）
                         assistantMessage.innerHTML = fullResponse.replaceAll('\n', '<br>');
                         const playBtn = document.createElement('button');
                         playBtn.className = 'play-button';
