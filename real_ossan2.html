@@ -253,8 +253,8 @@
             try {
                 const audio = await puter.ai.txt2speech(cleanText, {
                     provider: 'openai',
-                    model: 'tts-1',
-                    response_format: 'mp3',
+                    model: 'gpt-4o-mini-tts',
+                    response_format: 'aac',
                     voice: 'onyx'
                 });
 
