@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web監視システム Monitoring X ver.2.1</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .url-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #eee;
+        }
+
+        .url-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .url-section input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .url-section input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #fff;
+        }
+
+        .interval-section {
+            margin-bottom: 25px;
+        }
+
+        .interval-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .interval-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .interval-option {
+            position: relative;
+        }
+
+        .interval-option input[type="radio"] {
+            display: none;
+        }
+
+        .interval-option label {
+            display: block;
+            padding: 12px;
+            background: #f0f0f0;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .interval-option input[type="radio"]:checked + label {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .interval-option label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-stop {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .status-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .status-value {
+            color: #333;
+        }
+
+        .status-active {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        .status-inactive {
+            color: #95a5a6;
+        }
+
+        .log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid #34495e;
+            line-height: 1.4;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: #3498db;
+            margin-right: 10px;
+        }
+
+        .log-change {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .log-nochange {
+            color: #95a5a6;
+        }
+
+        .log-info {
+            color: #f39c12;
+        }
+
+        .log-error {
+            color: #ff7675;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Monitoring X ver.2.1</h1>
+            <p>ウェブサイトの更新を自動的に監視します</p>
+        </div>
+
+        <div class="content">
+            <div class="url-section">
+                <label for="urlInput">監視対象URL (編集可能)</label>
+                <input type="text" id="urlInput" value="https://m.hanshintigers.jp/column_news/" placeholder="https://example.com">
+                <p style="font-size: 11px; color: #666; margin-top: 5px;">※URLを書き換えて監視を開始すると、そのURLが保存されます。</p>
+            </div>
+
+            <div class="interval-section">
+                <h3>監視間隔</h3>
+                <div class="interval-grid">
+                    <div class="interval-option"><input type="radio" id="i5" name="interval" value="300000"><label for="i5">5分</label></div>
+                    <div class="interval-option"><input type="radio" id="i10" name="interval" value="600000" checked><label for="i10">10分</label></div>
+                    <div class="interval-option"><input type="radio" id="i15" name="interval" value="900000"><label for="i15">15分</label></div>
+                    <div class="interval-option"><input type="radio" id="i30" name="interval" value="1800000"><label for="i30">30分</label></div>
+                    <div class="interval-option"><input type="radio" id="i60" name="interval" value="3600000"><label for="i60">1時間</label></div>
+                    <div class="interval-option"><input type="radio" id="i180" name="interval" value="10800000"><label for="i180">3時間</label></div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-start" id="startBtn">監視開始</button>
+                <button class="btn btn-stop" id="stopBtn" disabled>監視停止</button>
+            </div>
+
+            <div class="status">
+                <div class="status-row">
+                    <span class="status-label">ステータス:</span>
+                    <span class="status-value" id="statusText"><span class="status-inactive">停止中</span></span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">最終チェック:</span>
+                    <span class="status-value" id="lastCheck">-</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">チェック回数:</span>
+                    <span class="status-value" id="checkCount">0</span>
+                </div>
+            </div>
+
+            <div class="log" id="logArea"></div>
+        </div>
+    </div>
+
+    <script>
+        const DEFAULT_URL = "https://m.hanshintigers.jp/column_news/";
+        let monitoringInterval = null;
+        let previousContent = null;
+        let checkCount = 0;
+
+        const urlInput = document.getElementById('urlInput');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusText = document.getElementById('statusText');
+        const lastCheck = document.getElementById('lastCheck');
+        const checkCountEl = document.getElementById('checkCount');
+        const logArea = document.getElementById('logArea');
+
+        // ページ読み込み時に保存されたURLを復元
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedUrl = localStorage.getItem('monitored_url');
+            if (savedUrl) {
+                urlInput.value = savedUrl;
+                addLog('保存されていたURLを読み込みました', 'info');
+            }
+        });
+
+        function addLog(message, type = 'info') {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('ja-JP');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            let className = `log-${type}`;
+            entry.innerHTML = `<span class="log-time">[${timeStr}]</span><span class="${className}">${message}</span>`;
+            logArea.insertBefore(entry, logArea.firstChild);
+        }
+
+        async function checkWebsite() {
+            const url = urlInput.value.trim();
+            try {
+                // ブラウザのキャッシュを避けるためにタイムスタンプを付与（可能な場合）
+                const response = await fetch(url, { mode: 'cors', cache: 'no-cache' });
+
+                if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
+
+                const content = await response.text();
+                const now = new Date().toLocaleString('ja-JP');
+                lastCheck.textContent = now;
+                checkCount++;
+                checkCountEl.textContent = checkCount;
+
+                if (previousContent === null) {
+                    previousContent = content;
+                    addLog('初回取得完了。変更の監視を開始します。', 'info');
+                } else if (previousContent !== content) {
+                    previousContent = content;
+                    addLog('🔴 更新を検出しました！', 'change');
+                    sendNotification();
+                } else {
+                    addLog('変更なし', 'nochange');
+                }
+            } catch (error) {
+                addLog(`エラー: ${error.message}`, 'error');
+                if (error.message.includes('fetch')) {
+                    addLog('ヒント: CORS制限により取得できない可能性があります。ブラウザ拡張機能等を確認してください。', 'info');
+                }
+            }
+        }
+
+        function sendNotification() {
+            if (Notification.permission === 'granted') {
+                new Notification('Monitoring X', { body: 'サイトが更新されました！' });
+            }
+        }
+
+        function startMonitoring() {
+            const url = urlInput.value.trim();
+            if (!url) return alert('URLを入力してください');
+
+            // URLをローカルストレージに保存
+            localStorage.setItem('monitored_url', url);
+
+            if (Notification.permission === 'default') Notification.requestPermission();
+
+            const intervalMs = parseInt(document.querySelector('input[name="interval"]:checked').value);
+            
+            checkWebsite();
+            monitoringInterval = setInterval(checkWebsite, intervalMs);
+
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            urlInput.disabled = true;
+            statusText.innerHTML = '<span class="status-active">監視中</span>';
+            addLog(`監視を開始: ${url}`, 'info');
+        }
+
+        function stopMonitoring() {
+            clearInterval(monitoringInterval);
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            urlInput.disabled = false;
+            statusText.innerHTML = '<span class="status-inactive">停止中</span>';
+            addLog('監視を停止しました', 'info');
+        }
+
+        startBtn.addEventListener('click', startMonitoring);
+        stopBtn.addEventListener('click', stopMonitoring);
+        addLog('システム準備完了', 'info');
+    </script>
+</body>
+</html>
