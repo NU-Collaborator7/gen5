@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web監視システムMonitoring X ver.2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .url-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .url-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .url-section input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .url-section input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .interval-section {
+            margin-bottom: 25px;
+        }
+
+        .interval-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .interval-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .interval-option {
+            position: relative;
+        }
+
+        .interval-option input[type="radio"] {
+            display: none;
+        }
+
+        .interval-option label {
+            display: block;
+            padding: 12px;
+            background: #f0f0f0;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .interval-option input[type="radio"]:checked + label {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .interval-option label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-stop {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .status-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .status-value {
+            color: #333;
+        }
+
+        .status-active {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        .status-inactive {
+            color: #95a5a6;
+        }
+
+        .log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid #34495e;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: #3498db;
+            margin-right: 10px;
+        }
+
+        .log-change {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .log-nochange {
+            color: #95a5a6;
+        }
+
+        .log-info {
+            color: #f39c12;
+        }
+
+        .log-error {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Web監視システムMonitoring X ver.2</h1>
+            <p>ウェブサイトの更新を自動的に監視します</p>
+        </div>
+
+        <div class="content">
+            <div class="url-section">
+                <label for="urlInput">監視URL</label>
+                <input type="text" id="urlInput" value="https://nu-collaborator7.github.io/gen5/baseball.html" placeholder="監視するURLを入力してください">
+            </div>
+
+            <div class="interval-section">
+                <h3>監視間隔</h3>
+                <div class="interval-grid">
+                    <div class="interval-option">
+                        <input type="radio" id="interval-5" name="interval" value="300000">
+                        <label for="interval-5">5分</label>
+                    </div>
+                    <div class="interval-option">
+                        <input type="radio" id="interval-10" name="interval" value="600000" checked>
+                        <label for="interval-10">10分</label>
+                    </div>
+                    <div class="interval-option">
+                        <input type="radio" id="interval-15" name="interval" value="900000">
+                        <label for="interval-15">15分</label>
+                    </div>
+                    <div class="interval-option">
+                        <input type="radio" id="interval-20" name="interval" value="1200000">
+                        <label for="interval-20">20分</label>
+                    </div>
+                    <div class="interval-option">
+                        <input type="radio" id="interval-25" name="interval" value="1500000">
+                        <label for="interval-25">25分</label>
+                    </div>
+                    <div class="interval-option">
+                        <input type="radio" id="interval-30" name="interval" value="1800000">
+                        <label for="interval-30">30分</label>
+                    </div>
+                    <div class="interval-option">
+                        <input type="radio" id="interval-45" name="interval" value="2700000">
+                        <label for="interval-45">45分</label>
+                    </div>
+                    <div class="interval-option">
+                        <input type="radio" id="interval-60" name="interval" value="3600000">
+                        <label for="interval-60">60分</label>
+                    </div>
+                    <div class="interval-option">
+                        <input type="radio" id="interval-120" name="interval" value="7200000">
+                        <label for="interval-120">2時間</label>
+                    </div>
+                    <div class="interval-option">
+                        <input type="radio" id="interval-180" name="interval" value="10800000">
+                        <label for="interval-180">3時間</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-start" id="startBtn">監視開始</button>
+                <button class="btn btn-stop" id="stopBtn" disabled>監視停止</button>
+            </div>
+
+            <div class="status">
+                <div class="status-row">
+                    <span class="status-label">ステータス:</span>
+                    <span class="status-value" id="statusText"><span class="status-inactive">停止中</span></span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">最終チェック:</span>
+                    <span class="status-value" id="lastCheck">-</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">次回チェック:</span>
+                    <span class="status-value" id="nextCheck">-</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">チェック回数:</span>
+                    <span class="status-value" id="checkCount">0</span>
+                </div>
+            </div>
+
+            <div class="log" id="logArea"></div>
+        </div>
+    </div>
+
+    <script>
+        let monitoringInterval = null;
+        let previousContent = null;
+        let checkCount = 0;
+        let nextCheckTimeout = null;
+
+        const urlInput = document.getElementById('urlInput');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusText = document.getElementById('statusText');
+        const lastCheck = document.getElementById('lastCheck');
+        const nextCheck = document.getElementById('nextCheck');
+        const checkCountEl = document.getElementById('checkCount');
+        const logArea = document.getElementById('logArea');
+
+        function addLog(message, type = 'info') {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('ja-JP');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            let className = 'log-info';
+            if (type === 'change') className = 'log-change';
+            else if (type === 'nochange') className = 'log-nochange';
+            else if (type === 'error') className = 'log-error';
+            
+            entry.innerHTML = `<span class="log-time">[${timeStr}]</span><span class="${className}">${message}</span>`;
+            logArea.insertBefore(entry, logArea.firstChild);
+        }
+
+        function getSelectedInterval() {
+            const selected = document.querySelector('input[name="interval"]:checked');
+            return parseInt(selected.value);
+        }
+
+        function updateNextCheckTime() {
+            const interval = getSelectedInterval();
+            const nextTime = new Date(Date.now() + interval);
+            nextCheck.textContent = nextTime.toLocaleTimeString('ja-JP');
+        }
+
+        async function checkWebsite() {
+            const url = urlInput.value.trim();
+            if (!url) {
+                addLog('URLが入力されていません', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    cache: 'no-cache'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const content = await response.text();
+                const now = new Date().toLocaleString('ja-JP');
+                lastCheck.textContent = now;
+                checkCount++;
+                checkCountEl.textContent = checkCount;
+
+                if (previousContent === null) {
+                    previousContent = content;
+                    addLog('初回チェック完了 - ベースラインを設定しました', 'info');
+                } else if (previousContent !== content) {
+                    previousContent = content;
+                    addLog('🔴 変更検出！ ウェブサイトが更新されました！', 'change');
+                    
+                    if (Notification.permission === 'granted') {
+                        new Notification('Web監視システム', {
+                            body: 'ウェブサイトに変更が検出されました！',
+                            icon: '🔴'
+                        });
+                    }
+                } else {
+                    addLog('変更なし - サイトは前回と同じです', 'nochange');
+                }
+
+                updateNextCheckTime();
+            } catch (error) {
+                addLog(`エラー: ${error.message}`, 'error');
+            }
+        }
+
+        function startMonitoring() {
+            const interval = getSelectedInterval();
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                addLog('URLを入力してください', 'error');
+                return;
+            }
+
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+
+            checkWebsite();
+            
+            monitoringInterval = setInterval(checkWebsite, interval);
+            
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            urlInput.disabled = true;
+            document.querySelectorAll('input[name="interval"]').forEach(el => el.disabled = true);
+            
+            statusText.innerHTML = '<span class="status-active">監視中</span>';
+            
+            const intervalText = document.querySelector('input[name="interval"]:checked').nextElementSibling.textContent;
+            addLog(`監視を開始しました (間隔: ${intervalText})`, 'info');
+        }
+
+        function stopMonitoring() {
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+                monitoringInterval = null;
+            }
+
+            if (nextCheckTimeout) {
+                clearTimeout(nextCheckTimeout);
+                nextCheckTimeout = null;
+            }
+
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            urlInput.disabled = false;
+            document.querySelectorAll('input[name="interval"]').forEach(el => el.disabled = false);
+            
+            statusText.innerHTML = '<span class="status-inactive">停止中</span>';
+            nextCheck.textContent = '-';
+            
+            addLog('監視を停止しました', 'info');
+        }
+
+        startBtn.addEventListener('click', startMonitoring);
+        stopBtn.addEventListener('click', stopMonitoring);
+
+        addLog('Web監視システム起動完了', 'info');
+    </script>
+</body>
+</html>
