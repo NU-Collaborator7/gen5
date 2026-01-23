@@ -18,24 +18,35 @@
             background-color: var(--bg-color);
             margin: 0;
             padding: 0;
-            overflow: hidden; /* 全体のスクロールを抑止 */
+            overflow: hidden;
             color: var(--accent-color);
+            overscroll-behavior: auto;
         }
 
-        /* ヘッダー/ナビゲーション */
         .nav-wrapper {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 60px;
             background: var(--tab-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-color);
             z-index: 1000;
+        }
+
+        .update-time {
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-secondary);
+            padding: 4px 0 2px 0;
+            letter-spacing: 0.02em;
+        }
+
+        .nav-tabs {
             display: flex;
             align-items: center;
+            height: 54px;
         }
 
         .tab-container {
@@ -45,11 +56,11 @@
             margin: 0 auto;
             padding: 0 20px;
             gap: 25px;
-            scrollbar-width: none; /* Firefox */
+            scrollbar-width: none;
         }
 
         .tab-container::-webkit-scrollbar {
-            display: none; /* Chrome, Safari */
+            display: none;
         }
 
         .tab {
@@ -72,7 +83,6 @@
             color: var(--accent-color);
         }
 
-        /* アクティブなタブの下線アニメーション */
         .tab.active::after {
             content: "";
             position: absolute;
@@ -83,11 +93,11 @@
             background: var(--accent-color);
         }
 
-        /* コンテンツエリア */
         .main-content {
-            margin-top: 61px; /* navの高さ分 */
-            height: calc(100vh - 61px);
+            margin-top: 74px;
+            height: calc(100vh - 74px);
             width: 100%;
+            overscroll-behavior: auto;
         }
 
         .page-content {
@@ -104,11 +114,11 @@
             width: 100%;
             height: 100%;
             border: none;
-            /* ダークモードなどの外部サイトの干渉を防ぐ */
             background: #fff;
+            overscroll-behavior: auto;
+            touch-action: auto;
         }
 
-        /* ローディング中の表示を少し滑らかに */
         .iframe-wrapper {
             width: 100%;
             height: 100%;
@@ -124,7 +134,10 @@
 <body>
 
 <div class="nav-wrapper">
-    <div class="tab-container" id="tab-container"></div>
+    <div class="update-time" id="update-time"></div>
+    <div class="nav-tabs">
+        <div class="tab-container" id="tab-container"></div>
+    </div>
 </div>
 
 <div id="main-content" class="main-content"></div>
@@ -132,45 +145,47 @@
 <script>
     const tabContainer = document.getElementById('tab-container');
     const mainContent = document.getElementById('main-content');
+    const updateTime = document.getElementById('update-time');
     const startPage = 1;
     const endPage = 10;
 
-    // 初期化
+    function updateLastUpdated() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = (now.getMonth() + 1).toString().padStart(2, '0');
+        const d = now.getDate().toString().padStart(2, '0');
+        const h = now.getHours().toString().padStart(2, '0');
+        const min = now.getMinutes().toString().padStart(2, '0');
+        updateTime.textContent = `最終更新: ${y}/${m}/${d} ${h}:${min}`;
+    }
+    updateLastUpdated();
+
     for (let i = startPage; i <= endPage; i++) {
-        // タブの生成
         const tab = document.createElement('div');
         tab.className = 'tab' + (i === 1 ? ' active' : '');
         tab.textContent = `PAGE ${i}`;
         tab.onclick = () => switchPage(i);
         tabContainer.appendChild(tab);
 
-        // iframeコンテナの生成
         const url = `https://m.hanshintigers.jp/column_news/page:${i}`;
         const pageDiv = document.createElement('div');
         pageDiv.className = 'page-content' + (i === 1 ? ' active' : '');
         pageDiv.id = `page-${i}`;
-        pageDiv.innerHTML = `
-            <div class="iframe-wrapper">
-                <iframe src="${url}" loading="lazy"></iframe>
-            </div>
-        `;
+        pageDiv.innerHTML = `<div class="iframe-wrapper"><iframe src="${url}" loading="lazy"></iframe></div>`;
         mainContent.appendChild(pageDiv);
     }
 
     function switchPage(pageNum) {
-        // タブの切り替え
         document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
         const tabs = document.querySelectorAll('.tab');
-        if(tabs[pageNum - 1]) {
+        if (tabs[pageNum - 1]) {
             tabs[pageNum - 1].classList.add('active');
-            // スムーズにスクロールしてタブを中央へ
             tabs[pageNum - 1].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }
 
-        // コンテンツの切り替え
         document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
         const content = document.getElementById(`page-${pageNum}`);
-        if(content) content.classList.add('active');
+        if (content) content.classList.add('active');
     }
 </script>
 
