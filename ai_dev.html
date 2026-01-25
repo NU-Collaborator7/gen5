@@ -90,6 +90,7 @@
                 <option value="auto">音声: 自動</option>
                 <option value="male">音声: 男性</option>
                 <option value="female">音声: 女性</option>
+                <option value="onyx">リアル音声（Android/Windows/iPad/macBook）</option>
             </select>
             <div id="loadStatus" class="load-status"></div>
             <div id="voiceStatus" class="voice-status"></div>
@@ -142,7 +143,6 @@
             const jaVoices = availableVoices.filter(v => v.lang.includes('ja'));
             
             if (voiceType === 'male') {
-                // 男性の声を優先的に選択
                 return jaVoices.find(v => 
                     v.name.includes('Male') || 
                     v.name.includes('男性') ||
@@ -150,7 +150,6 @@
                     v.name.includes('Otoya')
                 ) || jaVoices[0];
             } else if (voiceType === 'female') {
-                // 女性の声を優先的に選択
                 return jaVoices.find(v => 
                     v.name.includes('Female') || 
                     v.name.includes('女性') ||
@@ -159,8 +158,23 @@
                 ) || jaVoices[0];
             }
             
-            // 自動の場合はデフォルトの日本語音声
             return jaVoices[0];
+        }
+
+        // 現在の日時を取得する関数（参考HTMLのロジック）
+        function getCurrentDateTime() {
+            const now = new Date();
+            const options = { 
+                timeZone: 'Asia/Tokyo',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                weekday: 'long',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            return now.toLocaleString('ja-JP', options);
         }
 
         // プロファイルデータの読み込み
@@ -213,6 +227,7 @@
             });
         }
 
+        // ブラウザ音声で再生
         function speakText(text, button) {
             stopAllSpeech();
             button.textContent = '⏸️ 停止';
@@ -221,7 +236,6 @@
             const cleanText = text.replace(/[*#]/g, '').trim();
             const utterance = new SpeechSynthesisUtterance(cleanText);
             
-            // 選択された音声を設定
             const selectedVoice = getSelectedVoice();
             if (selectedVoice) {
                 utterance.voice = selectedVoice;
@@ -230,14 +244,13 @@
             utterance.lang = 'ja-JP';
             utterance.rate = 1.1;
             
-            // 音声タイプに応じてピッチを調整
             const voiceType = voiceSelect.value;
             if (voiceType === 'female') {
-                utterance.pitch = 1.2;  // 女性: 少し高め
+                utterance.pitch = 1.2;
             } else if (voiceType === 'male') {
-                utterance.pitch = 0.9;  // 男性: 少し低め
+                utterance.pitch = 0.9;
             } else {
-                utterance.pitch = 1.0;  // 自動: 標準
+                utterance.pitch = 1.0;
             }
             
             utterance.onstart = () => { 
@@ -254,6 +267,54 @@
             window.speechSynthesis.speak(utterance);
         }
 
+        // リアル音声（onyx）で再生
+        async function speakViaPuter(text, button) {
+            if (!text) return;
+            stopAllSpeech();
+            button.textContent = '📢 生成中...';
+            button.classList.add('playing');
+            voiceStatus.textContent = '🎤 リアル音声生成中...';
+
+            let cleanText = text
+                .replace(/\*\*/g, '')
+                .replace(/\*/g, '')
+                .replace(/#{1,6}\s/g, '')
+                .replace(/:/g, '')
+                .replace(/[\u{1F600}-\u{1F64F}]/gu, '')
+                .replace(/[\u{1F300}-\u{1F5FF}]/gu, '')
+                .replace(/[\u{1F680}-\u{1F6FF}]/gu, '')
+                .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '')
+                .replace(/[\u{2600}-\u{26FF}]/gu, '')
+                .replace(/[\u{2700}-\u{27BF}]/gu, '')
+                .replace(/[\u{1F900}-\u{1F9FF}]/gu, '')
+                .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '')
+                .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '');
+
+            try {
+                const audio = await puter.ai.txt2speech(cleanText, {
+                    provider: 'openai',
+                    model: 'tts-1',
+                    response_format: 'aac',
+                    voice: 'onyx',
+                    language: 'ja'
+                });
+
+                voiceStatus.textContent = '▶️ 再生中...';
+                await audio.play();
+
+                audio.onended = () => {
+                    button.textContent = '▶️ 音声を再生する';
+                    button.classList.remove('playing');
+                    voiceStatus.textContent = '';
+                };
+            } catch (err) {
+                console.error('リアル音声再生エラー:', err);
+                voiceStatus.textContent = '⚠️ 音声生成に失敗しました';
+                button.textContent = '▶️ 音声を再生する';
+                button.classList.remove('playing');
+            }
+        }
+
         function addMessage(text, isUser) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
@@ -262,7 +323,14 @@
                 const playButton = document.createElement('button');
                 playButton.className = 'play-button';
                 playButton.textContent = '▶️ 音声を再生する';
-                playButton.onclick = () => speakText(text, playButton);
+                playButton.onclick = () => {
+                    const voiceType = voiceSelect.value;
+                    if (voiceType === 'onyx') {
+                        speakViaPuter(text, playButton);
+                    } else {
+                        speakText(text, playButton);
+                    }
+                };
                 messageDiv.appendChild(playButton);
             }
             messagesDiv.appendChild(messageDiv);
@@ -280,7 +348,14 @@
             addMessage(userText, true);
             inputField.value = '';
 
-            const fullPrompt = charaData ? `以下の設定に従って回答してください。\n設定:\n${charaData}\n\nユーザー: ${userText}` : userText;
+            // 現在の日時を取得
+            const profiling_time = getCurrentDateTime();
+
+            // プロファイルデータと現在時刻を結合してプロンプトを作成
+            const fullPrompt = charaData 
+                ? `以下の設定に従って回答してください。\n設定:\n${charaData}\n\nユーザー: ${userText}\n\n現在の日時: ${profiling_time}` 
+                : `${userText}\n\n現在の日時: ${profiling_time}`;
+            
             conversationHistory.push({ role: 'user', content: fullPrompt });
 
             const indicator = document.createElement('div');
@@ -303,7 +378,14 @@
                         const playBtn = document.createElement('button');
                         playBtn.className = 'play-button';
                         playBtn.textContent = '▶️ 音声を再生する';
-                        playBtn.onclick = () => speakText(fullResponse, playBtn);
+                        playBtn.onclick = () => {
+                            const voiceType = voiceSelect.value;
+                            if (voiceType === 'onyx') {
+                                speakViaPuter(fullResponse, playBtn);
+                            } else {
+                                speakText(fullResponse, playBtn);
+                            }
+                        };
                         assistantMessage.appendChild(playBtn);
 
                         messagesDiv.scrollTop = messagesDiv.scrollHeight;
