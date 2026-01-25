@@ -187,6 +187,9 @@
             if (selectedVoice === 'onyx') {
                 voiceEnabled = true;
                 voiceStatus.textContent = '🎤 リアル音声が有効です';
+            } else if (selectedVoice === 'browser') {
+                voiceEnabled = true;
+                voiceStatus.textContent = '🔊 ブラウザ音声が有効です';
             } else {
                 voiceEnabled = false;
                 voiceStatus.textContent = '';
