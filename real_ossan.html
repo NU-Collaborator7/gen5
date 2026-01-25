@@ -80,19 +80,39 @@
         .typing-indicator span:nth-child(3){ animation-delay:0.24s; opacity:0.42; }
         @keyframes bounce { 0%,60%,100%{ transform:translateY(0);} 30%{ transform:translateY(-8px);} }
 
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(246, 240, 230, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            font-size: 18px;
+            font-weight: 700;
+            color: #000;
+        }
+
         @media (max-width:600px){ .chat-header{font-size:18px}.chat-container{height:94vh} }
     </style>
 </head>
 <body>
     <div class="chat-container">
+        <div class="loading-overlay" id="loadingOverlay">
+            📖 プロファイルを読み込み中...
+        </div>
         <div class="chat-header">
             <div class="title-emoji">🐯</div>
             <div class="title-text">虎おっさん（リアル音声版） </div>
         </div>
         <div class="voice-controls">
             <select class="language-select" id="voiceSelect">
-                <option value="onyx">リアル音声を利用します。</option>
-                <option value="default" selected>音声オフになっています。ここでオンにして下さい。</option>
+                <option value="default" selected>音声オフ</option>
+                <option value="browser">ブラウザ音声</option>
+                <option value="onyx">リアル音声（Android/Windows/iPad/macBook）</option>
             </select>
             <span class="voice-status" id="voiceStatus"></span>
         </div>
@@ -116,6 +136,7 @@
         const sendButton = document.getElementById('send');
         const voiceStatus = document.getElementById('voiceStatus');
         const voiceSelect = document.getElementById('voiceSelect');
+        const loadingOverlay = document.getElementById('loadingOverlay');
         
         let isProcessing = false;
         let voiceEnabled = false;
@@ -126,6 +147,30 @@
         let speechQueue = [];
         let isSpeaking = false;
         let conversationHistory = [];
+        let profileData = '';
+        
+        // プロファイルファイルを読み込む
+        async function loadProfile() {
+            try {
+                const response = await fetch('RAG/profile_toraossan.txt');
+                if (!response.ok) {
+                    throw new Error('プロファイルファイルの読み込みに失敗しました');
+                }
+                profileData = await response.text();
+                loadingOverlay.style.display = 'none';
+                inputField.focus();
+            } catch (error) {
+                console.error('Profile load error:', error);
+                loadingOverlay.innerHTML = '⚠️ プロファイル読み込みエラー<br><small>RAG/profile_toraossan.txt を確認してください</small>';
+                // エラーでも続行
+                setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        // ページ読み込み時にプロファイルを読み込む
+        loadProfile();
         
         if (!('speechSynthesis' in window)) {
             voiceStatus.textContent = '⚠️ お使いのブラウザは音声合成に対応していません';
@@ -141,7 +186,7 @@
             selectedVoice = e.target.value;
             if (selectedVoice === 'onyx') {
                 voiceEnabled = true;
-                voiceStatus.textContent = '🎤 Onyx音声が有効です';
+                voiceStatus.textContent = '🎤 リアル音声が有効です';
             } else {
                 voiceEnabled = false;
                 voiceStatus.textContent = '';
@@ -236,7 +281,7 @@
         async function speakViaPuter(text, button) {
             if (!text) return;
             stopAllSpeech();
-            button.textContent = '⏳ 生成中...';
+            button.textContent = '📢 生成しながら再生します...';
             button.classList.add('playing');
             voiceStatus.textContent = '🎤 リアルボイス生成中...';
 
@@ -259,7 +304,7 @@
                 const audio = await puter.ai.txt2speech(cleanText, {
                     provider: 'openai',
                     model: 'tts-1',
-                    response_format: 'mp3',
+                    response_format: 'aac',
                     voice: 'onyx',
                     language: 'ja'
                 });
@@ -338,47 +383,22 @@
             const userMessage = inputField.value.trim();
             if (!userMessage) return;
             
-            const profiling1 = "名前: 虎おっさん（とらおっさん）"
-            const profiling2 = "年齢: 51歳"
-            const profiling3 = "尼崎=あまがさき、大物＝だいもつ、兵庫県尼崎市大物の近隣に在住の51歳。新しい二軍球場のSGLスタジアム尼崎へ自転車で行ける距離に住んでいる。"
-            const profiling4 = "尼崎市内の地元企業で働いている。仕事帰りに立ち飲みに行くのが楽しみだが、残業で行けないことが多い。"
-            const profiling5 = "ファン歴42年間。心臓の鼓動が「六・甲・お・ろ・し」のリズムで刻まれている。"
-            const profiling6 = "公式ファンクラブ・ダイヤモンド会員。ゴールド、プラチナと積み重ねた歳月を、人生の唯一の誇りとしている"
-            const profiling7 = "甲子園のライトスタンドとSGLスタジアム尼崎の内野席の年間シートを持っている。"
-            const profiling8 = "年間約40試合を球場で観戦。ライトスタンドの定位置に座ると、重鎮になる。"
-            const profiling9 = "宝物は 1985年当時のバースのサインボール。もはや魂の一部。"
-            const profiling10 = "1985年: 伝説のバックスクリーン3連発を中1で目撃。その後の「暗黒の30年」も経験した。 1990年代〜2000年代初頭: チームの強さに関わらず阪神タイガースを応援し続けた。2003年・2005年: 優勝。仕事のプレッシャーで押し潰されそうな中、星野監督や岡田監督の言葉だけを支えに生きていた。タイガースの歴史を語り始めると、目が据わるため「虎の説教」として恐れられる。 2023年: 38年ぶりの日本一になった時は、全スポーツ新聞を購入した。"
-            const profiling11 = "巨人に負けた翌日は機嫌が悪い。口癖は「…で、昨日の継投、お前はどう思う？」で周囲を困惑させる。"
-            const profiling12 = "タイガースの歴史を語り始めると目が据わるので『虎の説教』として恐れられる。"
-            const profiling13 = "選手が移籍したり引退したりするたびに、近所の居酒屋の隅で『…あいつも苦労したんや』と親戚のおじさんのような顔で独り言を言いながら日本酒を煽る"
-            const profiling14 = "甲子園カレー辛口、イカ焼きが好き。試合に負けると、帰り道のコンビニでパインアメを爆買いしてしまう。"
-            const profiling15 = "仕事着のスーツの下に、常に黄色いVネックのシャツをユニフォーム代わりに仕込んでいる"
-            const profiling16 = "好きな選手(1): 岩崎優（いわざき すぐる）= 2023年優勝の時、横田慎太郎選手のテーマ曲「栄光の架橋」で９回表に登場したプレッシャーを力に変えるクローザー（守護神）。"
-            const profiling17 = "好きな選手(2): 近本光司（ちかもとこうじ）= リードオフマンとして阪神タイガースを牽引する選手"
-            const profiling18 = "尊敬する人物：吉田義男（よしだ よしお）= 元阪神タイガースの名選手であり、後に監督も務めた。彼の野球に対する情熱と献身的な姿勢は、虎おっさんにとって大きな影響を与えた。"
-            const profiling19 = "将来の夢は、仕事をやめて、宜野座のキャンプに泊まりで行きたい。１軍、２軍、両方の全試合にも通いたい。"
-            const profiling20 = "2025年に藤川球児監督のもとでのNPB最速優勝に歓喜した。"
-            const profiling21 = "2025年にセリーグクライマックスシリーズで阪神がDeNAに勝利して日本シリーズにしたときもライトスタンドにいた。"
-            const profiling22 = "2025年、日本シリーズでソフトバンクに敗れた悔しさを胸に、来季の巻き返しを誓う。"
-            const profiling23 = "2025年についての阪神タイガースの記憶は、藤川球児新監督のもと、9月7日にセ・リーグ史上最速でのリーグ優勝を果たし、圧倒的な強さを見せました。 佐藤輝明選手が本塁打と打点の二冠、村上頌樹投手が最多勝に輝くなど、投打の主力が個人タイトルを席巻しました。 日本シリーズではソフトバンクに惜敗しましたが、球団創設90周年の節目を華々しい独走Vで飾った一年でした。"
-            const profiling24 = "口調の特徴: 関西弁（尼崎弁）を使用 - 語尾に「や」「やな」「やろ」「やで」などを多用"
-            const profiling25 = "最近のニュース:オープン戦のチケットがもうすぐ発売。寒くても観に行く。榮枝選手の結婚。新たな公式電子トレカサービス「タイガースコレクション」のリリース"
-            const profiling26 = "最近のニュース:2026年から導入されるファームの3地区制により、試合日程の偏りが懸念されますが、地区の枠を超えた「伝統の一戦」である阪神巨人戦が開催されることを期待しつつ、タイガースの勝利だけを心から祈っている。"
-            const profiling27 = "藤川球児監督は2年目のシーズンに入り、チームは更なる成長を遂げています。新戦力の台頭やベテラン選手の活躍により、チームの総合力が向上しています。特に若手選手の積極的な起用が功を奏し、チーム全体に活気が溢れています。ファンとしては、今後の試合展開に大いに期待しています。"
-            const profiling28 = "現在は2026年である。虎おっさんは引き続き阪神タイガースを熱烈に応援しており、チームの更なる成功を心から願っている。新たなシーズンに向けて、選手たちの活躍とチームの成長に期待を寄せている。"
+            // 現在の日時を取得
+            const now = new Date();
+            const options = { 
+                timeZone: 'Asia/Tokyo',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                weekday: 'long',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            const profiling_time = now.toLocaleString('ja-JP', options);
 
-            const profiles = [profiling1, profiling2, profiling3, profiling4, profiling5,
-            profiling6, profiling7, profiling8, profiling9, profiling10,
-            profiling11, profiling12, profiling13, profiling14, profiling15,
-            profiling16, profiling17,profiling18,profiling19,profiling20,profiling21, 
-            profiling22,profiling23,profiling24,profiling25,profiling26,profiling27,profiling28];
-            let allProfilingText = "";
-            for (let i = 0; i < profiles.length; i++) {
-                if (profiles[i]) {
-                    allProfilingText += `【プロフ${i + 1}】: ${profiles[i]}\n`;
-                }
-            }
-            const messageToSend = `${userMessage}\n\n${allProfilingText}`;
+            // プロファイルデータと現在時刻を結合
+            const messageToSend = `${userMessage}\n\n${profileData}\n現在の日時: ${profiling_time}`;
 
             isProcessing = true;
             sendButton.disabled = true;
@@ -468,8 +488,6 @@
                 sendMessage();
             }
         });
-
-        inputField.focus();
     </script>
 </body>
 </html>

@@ -281,7 +281,7 @@
         async function speakViaPuter(text, button) {
             if (!text) return;
             stopAllSpeech();
-            button.textContent = '⏳ 生成中...';
+            button.textContent = '📢 生成しながら再生します...';
             button.classList.add('playing');
             voiceStatus.textContent = '🎤 リアルボイス生成中...';
 
@@ -304,7 +304,7 @@
                 const audio = await puter.ai.txt2speech(cleanText, {
                     provider: 'openai',
                     model: 'tts-1',
-                    response_format: 'mp3',
+                    response_format: 'aac',
                     voice: 'onyx',
                     language: 'ja'
                 });
