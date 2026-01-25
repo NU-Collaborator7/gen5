@@ -161,6 +161,22 @@
             return jaVoices[0];
         }
 
+        // 現在の日時を取得する関数（参考HTMLのロジック）
+        function getCurrentDateTime() {
+            const now = new Date();
+            const options = { 
+                timeZone: 'Asia/Tokyo',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                weekday: 'long',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            return now.toLocaleString('ja-JP', options);
+        }
+
         // プロファイルデータの読み込み
         async function loadCharaData() {
             const selectedValue = profileSelect.value;
@@ -332,7 +348,14 @@
             addMessage(userText, true);
             inputField.value = '';
 
-            const fullPrompt = charaData ? `以下の設定に従って回答してください。\n設定:\n${charaData}\n\nユーザー: ${userText}` : userText;
+            // 現在の日時を取得
+            const profiling_time = getCurrentDateTime();
+
+            // プロファイルデータと現在時刻を結合してプロンプトを作成
+            const fullPrompt = charaData 
+                ? `以下の設定に従って回答してください。\n設定:\n${charaData}\n\nユーザー: ${userText}\n\n現在の日時: ${profiling_time}` 
+                : `${userText}\n\n現在の日時: ${profiling_time}`;
+            
             conversationHistory.push({ role: 'user', content: fullPrompt });
 
             const indicator = document.createElement('div');
