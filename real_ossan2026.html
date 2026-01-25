@@ -367,7 +367,19 @@
             const profiling27 = "藤川球児監督は2年目のシーズンに入り、チームは更なる成長を遂げています。新戦力の台頭やベテラン選手の活躍により、チームの総合力が向上しています。特に若手選手の積極的な起用が功を奏し、チーム全体に活気が溢れています。ファンとしては、今後の試合展開に大いに期待しています。"
             const profiling28 = "現在は2026年である。虎おっさんは引き続き阪神タイガースを熱烈に応援しており、チームの更なる成功を心から願っている。新たなシーズンに向けて、選手たちの活躍とチームの成長に期待を寄せている。"
             
-            const profiling_time = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
+            const now = new Date();
+            const options = { 
+                timeZone: 'Asia/Tokyo',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                weekday: 'long',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            const profiling_time = now.toLocaleString('ja-JP', options)
+
 
             const profiles = [profiling1, profiling2, profiling3, profiling4, profiling5,
             profiling6, profiling7, profiling8, profiling9, profiling10,
