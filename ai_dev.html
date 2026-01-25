@@ -90,7 +90,7 @@
                 <option value="auto">音声: 自動</option>
                 <option value="male">音声: 男性</option>
                 <option value="female">音声: 女性</option>
-                <option value="ash">リアル音声（Android/Windows/iPad/macBook）</option>
+                <option value="alloy">リアル音声（Android/Windows/iPad/macBook）</option>
             </select>
             <div id="loadStatus" class="load-status"></div>
             <div id="voiceStatus" class="voice-status"></div>
@@ -267,7 +267,7 @@
             window.speechSynthesis.speak(utterance);
         }
 
-        // リアル音声（ash）で再生
+        // リアル音声（alloy）で再生
         async function speakViaPuter(text, button) {
             if (!text) return;
             stopAllSpeech();
@@ -295,7 +295,7 @@
                     provider: 'openai',
                     model: 'tts-1',
                     response_format: 'aac',
-                    voice: 'ash',
+                    voice: 'alloy',
                     language: 'ja'
                 });
 
@@ -325,7 +325,7 @@
                 playButton.textContent = '▶️ 音声を再生する';
                 playButton.onclick = () => {
                     const voiceType = voiceSelect.value;
-                    if (voiceType === 'ash') {
+                    if (voiceType === 'alloy') {
                         speakViaPuter(text, playButton);
                     } else {
                         speakText(text, playButton);
@@ -380,7 +380,7 @@
                         playBtn.textContent = '▶️ 音声を再生する';
                         playBtn.onclick = () => {
                             const voiceType = voiceSelect.value;
-                            if (voiceType === 'ash') {
+                            if (voiceType === 'alloy') {
                                 speakViaPuter(fullResponse, playBtn);
                             } else {
                                 speakText(fullResponse, playBtn);
